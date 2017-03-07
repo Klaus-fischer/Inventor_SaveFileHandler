@@ -1,0 +1,9 @@
+1. Ordner öffnen:
+	%appdata%\Autodesk\ApplicationPlugins
+
+2. Neuer Ordner:
+	\Inventor_SaveFileHandler
+
+3. Beide Dateien in den Ordner Kopieren
+
+4. Inventor neustarten

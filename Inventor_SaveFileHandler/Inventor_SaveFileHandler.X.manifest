@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+
+  <assemblyIdentity name="Inventor_SaveFileHandler" version="1.0.0.0"></assemblyIdentity>
+
+  <clrClass clsid="{2c5e4482-99d6-4ca2-99c9-1213a14fcc40}" progid="Inventor_SaveFileHandler.StandardAddInServer" threadingModel="Both" name="Inventor_SaveFileHandler.StandardAddInServer" runtimeVersion=""></clrClass>
+
+  <file name="Inventor_SaveFileHandler.dll" hashalg="SHA1"></file>
+
+</assembly>
