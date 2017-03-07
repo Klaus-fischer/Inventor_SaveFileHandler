@@ -1,26 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows;
+﻿// <copyright file="Routines.cs" company="MTL - Montagetechnik Larem GmbH">
+// Copyright (c) MTL - Montagetechnik Larem GmbH. All rights reserved.
+// </copyright>
 
 namespace InvAddIn
 {
+    using System;
+    using System.IO;
+    using System.Linq;
+    using System.Text.RegularExpressions;
+    using System.Windows;
+
+    /// <summary>
+    /// Contains several routines used twice or more in this project.
+    /// </summary>
     public static class Routines
     {
         /// <summary>
         /// Calculates next part number based on prefix.
         /// </summary>
         /// <param name="prefix">PV001_T</param>
-        /// <param name="suffix">ipt</param>
+        /// <param name="suffix">Extension of requested type. Example 'ipt'</param>
         /// <param name="dir">PathToFiles</param>
-        /// <returns></returns>
+        /// <returns>Next expected part number.</returns>
         public static string GetNextPartNumber(string prefix, string suffix, string dir)
         {
-            // zähler für hochsten index
+            // counter for highest index
             int i = 0;
 
             Regex regEx = new Regex($@"^{prefix}(\d+)", RegexOptions.IgnoreCase);
@@ -39,6 +43,11 @@ namespace InvAddIn
             return $"{prefix}{i + 1:000}";
         }
 
+        /// <summary>
+        /// To serialize an Exception to a file stream.
+        /// File will be saved on desktop.
+        /// </summary>
+        /// <param name="ex">Exception to serialize.</param>
         internal static void SerializeException(Exception ex)
         {
             try

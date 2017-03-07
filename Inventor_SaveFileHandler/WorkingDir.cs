@@ -1,19 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// <copyright file="WorkingDir.cs" company="MTL - Montagetechnik Larem GmbH">
+// Copyright (c) MTL - Montagetechnik Larem GmbH. All rights reserved.
+// </copyright>
 
 namespace InvAddIn
 {
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+
+    /// <summary>
+    /// Contains path to working directory and special sub directories.
+    /// </summary>
     public class WorkingDir
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WorkingDir"/> class.
+        /// </summary>
+        /// <param name="dir">Path to working directory.</param>
         public WorkingDir(string dir)
         {
             this.Dir = dir;
         }
 
+        /// <summary>
+        /// Gets the path to working directory.
+        /// </summary>
         public string Dir { get; private set; }
 
         /// <summary>
@@ -23,14 +34,14 @@ namespace InvAddIn
         {
             get
             {
-                List<string> cadDirs = Directory.EnumerateDirectories(Dir, "*CAD*").ToList();
+                List<string> cadDirs = Directory.EnumerateDirectories(this.Dir, "*CAD*").ToList();
 
                 if (cadDirs.Any())
                 {
                     return cadDirs.First();
                 }
 
-                string result = Path.Combine(Dir, "CAD");
+                string result = Path.Combine(this.Dir, "CAD");
                 Directory.CreateDirectory(result);
 
                 return result;
@@ -44,14 +55,14 @@ namespace InvAddIn
         {
             get
             {
-                List<string> cadDirs = Directory.EnumerateDirectories(Dir, "*Kaufteile*").ToList();
+                List<string> cadDirs = Directory.EnumerateDirectories(this.Dir, "*Kaufteile*").ToList();
 
                 if (cadDirs.Any())
                 {
                     return cadDirs.First();
                 }
 
-                string result = Path.Combine(Dir, "Kaufteile");
+                string result = Path.Combine(this.Dir, "Kaufteile");
                 Directory.CreateDirectory(result);
 
                 return result;
@@ -65,14 +76,14 @@ namespace InvAddIn
         {
             get
             {
-                List<string> cadDirs = Directory.EnumerateDirectories(Dir, "*Kundenteile*").ToList();
+                List<string> cadDirs = Directory.EnumerateDirectories(this.Dir, "*Kundenteile*").ToList();
 
                 if (cadDirs.Any())
                 {
                     return cadDirs.First();
                 }
 
-                string result = Path.Combine(Dir, "Kundenteile");
+                string result = Path.Combine(this.Dir, "Kundenteile");
                 Directory.CreateDirectory(result);
 
                 return result;

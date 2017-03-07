@@ -34,7 +34,7 @@
         </Style>
     </Window.Resources>
     <StackPanel>
-        <CheckBox x:Name="cb_mainAssembly" Content="Hauptbaugruppe" Checked="cb_mainAssembly_Checked" Unchecked="cb_mainAssembly_Checked"/>
+        <CheckBox x:Name="cb_mainAssembly" Content="Hauptbaugruppe" Checked="Cb_mainAssembly_Checked" Unchecked="Cb_mainAssembly_Checked"/>
         <TabControl x:Name="tc_main" IsEnabled="{Binding IsChecked, Converter={StaticResource NegateConverter}, ElementName=cb_mainAssembly}" SelectionChanged="UpdatePreview" >
             <TabItem Header="Normal">
                 <StackPanel>
@@ -45,17 +45,13 @@
                     <HeaderedContentControl Header="Beschreibung:">
                         <TextBox x:Name="tb_description" />
                     </HeaderedContentControl>
-
-
                 </StackPanel>
             </TabItem>
             <TabItem Header="Kaufteil" Margin="-5,-4,1,1">
                 <StackPanel>
-
                     <HeaderedContentControl Header="Hersteller:">
                         <ComboBox Name="cb_vendor" IsEditable="True" SelectionChanged="UpdatePreview" KeyUp="UpdatePreview"/>
                     </HeaderedContentControl>
-
                     <HeaderedContentControl Header="Teilenummer:">
                         <TextBox Name="tb_vendorPartnumber"/>
                     </HeaderedContentControl>

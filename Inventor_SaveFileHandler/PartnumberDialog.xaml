@@ -50,7 +50,7 @@
             <TextBox x:Name="tb_description" />
         </HeaderedContentControl>
         <HeaderedContentControl Header="Hersteller:" Visibility="{Binding IsChecked, Converter={StaticResource BooleanToVisibilityConverter}, ElementName=rb_buypart}">
-            <ComboBox x:Name="tb_vendor" IsEditable="True" SelectionChanged="tb_vendor_SelectionChanged" KeyUp="tb_vendor_KeyUp"/>
+            <ComboBox x:Name="tb_vendor" IsEditable="True" SelectionChanged="Vendor_SelectionChanged" KeyUp="Vendor_KeyUp"/>
         </HeaderedContentControl>
         <HeaderedContentControl Header="Vorschau:">
             <TextBox x:Name="tb_preview" IsReadOnly="False"/>

@@ -1,53 +1,67 @@
-﻿using Inventor_SaveFileHandler;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Windows;
-using System.Windows.Controls;
+﻿// <copyright file="PartnumberDialog.xaml.cs" company="MTL - Montagetechnik Larem GmbH">
+// Copyright (c) MTL - Montagetechnik Larem GmbH. All rights reserved.
+// </copyright>
 
 namespace InvAddIn
 {
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Text.RegularExpressions;
+    using System.Windows;
+    using System.Windows.Controls;
+
     /// <summary>
-    /// Interaktionslogik für UserControl1.xaml
+    /// Code behind file for PartnumberDialog.xaml.
     /// </summary>
     public partial class PartnumberDialog : Window
     {
-
-        readonly Regex FieldValiddationRule = new Regex(@"^[^\\\/:\*\?\<\>\|" + "\"]{3,}$", RegexOptions.IgnoreCase);
+        /// <summary>
+        /// Validation rule for text fields.
+        /// </summary>
+        private readonly Regex fieldValiddationRule = new Regex(@"^[^\\\/:\*\?\<\>\|" + "\"]{3,}$", RegexOptions.IgnoreCase);
 
         /// <summary>
-        /// Fill name of current project
+        /// Initializes a new instance of the <see cref="PartnumberDialog"/> class.
+        /// </summary>
+        public PartnumberDialog()
+        {
+            this.InitializeComponent();
+            this.Loaded += this.PartnumberDialog_Loaded;
+        }
+
+        /// <summary>
+        /// Gets or sets fill name of current project
         /// </summary>
         public string ProjectName { get; set; }
 
         /// <summary>
-        /// Description of item
+        /// Gets or sets description of item
         /// </summary>
         public string Description { get; set; }
 
         /// <summary>
-        /// Vendor of item
+        /// Gets or sets vendor of item
         /// </summary>
         public string Vendor { get; set; }
 
         /// <summary>
-        /// Partnumber of item
+        /// Gets or sets part number of item
         /// </summary>
         public string Partnumber { get; set; }
 
         /// <summary>
-        /// expected Filename extension
+        /// Gets or sets expected Filename extension
         /// </summary>
         public string Suffix { get; set; } = "ipt";
 
         /// <summary>
-        /// Contains all path properties.
+        /// Gets or sets contains all path properties.
         /// </summary>
         public WorkingDir WorkingDir { get; set; }
 
         /// <summary>
-        /// User choice
+        /// Gets user choice
         /// </summary>
         public EPartType PartType { get; private set; } = EPartType.CustomerPart;
 
@@ -58,7 +72,7 @@ namespace InvAddIn
         {
             get
             {
-                Match m = Regex.Match(this.ProjectName,@"^(\w+\d+)[_\s]");
+                Match m = Regex.Match(this.ProjectName, @"^(\w+\d+)[_\s]");
 
                 if (m.Success)
                 {
@@ -66,25 +80,17 @@ namespace InvAddIn
                 }
                 else
                 {
-                    return ProjectName;
+                    return this.ProjectName;
                 }
             }
         }
 
-        public PartnumberDialog()
-        {
-            InitializeComponent();
-            this.Loaded += PartnumberDialog_Loaded;
-        }
-
         private void PartnumberDialog_Loaded(object sender, RoutedEventArgs e)
         {
-            this.Loaded -= PartnumberDialog_Loaded;
+            this.Loaded -= this.PartnumberDialog_Loaded;
 
-            tb_partnumber.Text = this.Partnumber;
-            tb_description.Text = this.Description;
-
-            #region === Kaufteile =============================================
+            this.tb_partnumber.Text = this.Partnumber;
+            this.tb_description.Text = this.Description;
 
             List<string> vendorNames = new List<string>();
 
@@ -96,20 +102,19 @@ namespace InvAddIn
                 {
                     vendorNames.Add(this.Vendor);
                 }
+
                 vendorNames.Sort();
-                tb_vendor.ItemsSource = vendorNames;
-                tb_vendor.SelectedItem = this.Vendor;
-                rb_buypart.IsChecked = true;
+                this.tb_vendor.ItemsSource = vendorNames;
+                this.tb_vendor.SelectedItem = this.Vendor;
+                this.rb_buypart.IsChecked = true;
             }
             else
             {
-                tb_vendor.ItemsSource = vendorNames;
-                rb_makepart.IsChecked = true;
+                this.tb_vendor.ItemsSource = vendorNames;
+                this.rb_makepart.IsChecked = true;
             }
 
-            #endregion
-
-            tb_description.Focus();
+            this.tb_description.Focus();
         }
 
         private void Textbox_TextChanged(object sender, TextChangedEventArgs e)
@@ -119,20 +124,20 @@ namespace InvAddIn
                 return;
             }
 
-            if (rb_buypart.IsChecked == true)
+            if (this.rb_buypart.IsChecked == true)
             {
-                if (tb_vendor.SelectedIndex == -1)
+                if (this.tb_vendor.SelectedIndex == -1)
                 {
-                    tb_preview.Text = $"{tb_vendor.Text.Trim()}_{tb_partnumber.Text.Trim()}_{tb_description.Text.Trim()}.{this.Suffix}";
+                    this.tb_preview.Text = $"{this.tb_vendor.Text.Trim()}_{this.tb_partnumber.Text.Trim()}_{this.tb_description.Text.Trim()}.{this.Suffix}";
                 }
                 else
                 {
-                    tb_preview.Text = $"{tb_vendor.SelectedItem}_{tb_partnumber.Text.Trim()}_{tb_description.Text.Trim()}.{this.Suffix}";
+                    this.tb_preview.Text = $"{this.tb_vendor.SelectedItem}_{this.tb_partnumber.Text.Trim()}_{this.tb_description.Text.Trim()}.{this.Suffix}";
                 }
             }
             else
             {
-                tb_preview.Text = $"{tb_partnumber.Text.Trim()}_{tb_description.Text.Trim()}.{this.Suffix}";
+                this.tb_preview.Text = $"{this.tb_partnumber.Text.Trim()}_{this.tb_description.Text.Trim()}.{this.Suffix}";
             }
         }
 
@@ -141,12 +146,12 @@ namespace InvAddIn
             if (sender == this.rb_makepart)
             {
                 this.PartType = EPartType.MakePart;
-                this.tb_partnumber.Text = Routines.GetNextPartNumber($"{ProjectKey}_T", this.Suffix, this.WorkingDir.CAD);
+                this.tb_partnumber.Text = Routines.GetNextPartNumber($"{this.ProjectKey}_T", this.Suffix, this.WorkingDir.CAD);
             }
-            else if (sender == rb_customerpart)
+            else if (sender == this.rb_customerpart)
             {
                 this.PartType = EPartType.CustomerPart;
-                this.tb_partnumber.Text = Routines.GetNextPartNumber($"{ProjectKey}_K", this.Suffix, this.WorkingDir.Kundenteile);
+                this.tb_partnumber.Text = Routines.GetNextPartNumber($"{this.ProjectKey}_K", this.Suffix, this.WorkingDir.Kundenteile);
             }
             else
             {
@@ -157,14 +162,14 @@ namespace InvAddIn
 
         private void OK_Clicked(object sender, RoutedEventArgs e)
         {
-            if (!FieldValiddationRule.IsMatch(this.tb_partnumber.Text))
+            if (!this.fieldValiddationRule.IsMatch(this.tb_partnumber.Text))
             {
                 this.tb_partnumber.SelectAll();
                 this.tb_partnumber.Focus();
                 return;
             }
 
-            if (!FieldValiddationRule.IsMatch(this.tb_description.Text))
+            if (!this.fieldValiddationRule.IsMatch(this.tb_description.Text))
             {
                 this.tb_description.SelectAll();
                 this.tb_description.Focus();
@@ -175,26 +180,26 @@ namespace InvAddIn
             {
                 if (this.tb_vendor.SelectedIndex == -1)
                 {
-                    if (!FieldValiddationRule.IsMatch(this.tb_vendor.Text))
+                    if (!this.fieldValiddationRule.IsMatch(this.tb_vendor.Text))
                     {
                         this.tb_vendor.Focus();
                         return;
                     }
                     else
                     {
-                        this.Vendor = tb_vendor.Text.Trim();
+                        this.Vendor = this.tb_vendor.Text.Trim();
                     }
                 }
                 else
                 {
                     this.Vendor = this.tb_vendor.SelectedItem as string;
                 }
-
             }
             else
             {
                 this.Vendor = string.Empty;
             }
+
             this.Partnumber = this.tb_partnumber.Text.Trim();
             this.Description = this.tb_description.Text.Trim();
 
@@ -202,14 +207,14 @@ namespace InvAddIn
             this.Close();
         }
 
-        private void tb_vendor_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void Vendor_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            Textbox_TextChanged(sender, null);
+            this.Textbox_TextChanged(sender, null);
         }
 
-        private void tb_vendor_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+        private void Vendor_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            Textbox_TextChanged(sender, null);
+            this.Textbox_TextChanged(sender, null);
         }
     }
 }

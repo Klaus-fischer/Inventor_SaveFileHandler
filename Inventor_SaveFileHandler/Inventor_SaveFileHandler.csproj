@@ -38,8 +38,7 @@
     <ConfigurationOverrideFile>
     </ConfigurationOverrideFile>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DocumentationFile>
-    </DocumentationFile>
+    <DocumentationFile>bin\Debug\Inventor_SaveFileHandler.XML</DocumentationFile>
     <DebugSymbols>true</DebugSymbols>
     <FileAlignment>4096</FileAlignment>
     <NoStdLib>false</NoStdLib>
@@ -117,6 +116,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Inventor_SaveFileHandler.X.manifest" />
+    <AdditionalFiles Include="stylecop.json" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Autodesk.Inventor_SaveFileHandler.Inventor.addin">
@@ -124,6 +124,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="Readme.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -140,6 +141,11 @@
     <None Include="HowTo.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\packages\StyleCop.Analyzers.1.0.0\analyzers\dotnet\cs\Newtonsoft.Json.dll" />
+    <Analyzer Include="..\packages\StyleCop.Analyzers.1.0.0\analyzers\dotnet\cs\StyleCop.Analyzers.CodeFixes.dll" />
+    <Analyzer Include="..\packages\StyleCop.Analyzers.1.0.0\analyzers\dotnet\cs\StyleCop.Analyzers.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

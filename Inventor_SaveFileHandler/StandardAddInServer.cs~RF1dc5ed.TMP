@@ -1,18 +1,16 @@
-// <copyright file="StandardAddInServer.cs" company="MTL - Montagetechnik Larem GmbH">
-// Copyright (c) MTL - Montagetechnik Larem GmbH. All rights reserved.
-// </copyright>
+using System;
+using System.Runtime.InteropServices;
+using Inventor;
+using Microsoft.Win32;
+using System.Windows.Forms;
+using IO = System.IO;
+using InvAddIn;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Inventor_SaveFileHandler
 {
-    using System;
-    using System.Linq;
-    using System.Runtime.InteropServices;
-    using System.Text.RegularExpressions;
-    using System.Windows.Forms;
-    using InvAddIn;
-    using Inventor;
-    using IO = System.IO;
-
     /// <summary>
     /// This is the primary AddIn Server class that implements the ApplicationAddInServer interface
     /// that all Inventor AddIns are required to implement. The communication between Inventor and
@@ -21,39 +19,17 @@ namespace Inventor_SaveFileHandler
     [GuidAttribute("2c5e4482-99d6-4ca2-99c9-1213a14fcc40")]
     public class StandardAddInServer : Inventor.ApplicationAddInServer
     {
-        /// <summary>
-        /// Inventor application object.
-        /// </summary>
-        private Inventor.Application inventorApplication;
 
-        /// <summary>
-        /// Event handler for UI events.
-        /// </summary>
-        private FileUIEvents uIevents;
+        // Inventor application object.
+        private Inventor.Application m_inventorApplication;
+        private Inventor.FileUIEvents m_UIevents;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="StandardAddInServer"/> class.
-        /// </summary>
         public StandardAddInServer()
         {
         }
 
-        /// <summary>
-        /// Gets the property is provided to allow the AddIn to expose an API
-        /// of its own to other programs. Typically, this  would be done by
-        /// implementing the AddIn's API interface in a class and returning
-        /// that class object through this property.
-        /// </summary>
-        public object Automation
-        {
-            get
-            {
-                // TODO: Add ApplicationAddInServer.Automation getter implementation
-                return null;
-            }
-        }
+        #region ApplicationAddInServer Members
 
-        /// <inheritdoc/>
         public void Activate(Inventor.ApplicationAddInSite addInSiteObject, bool firstTime)
         {
             // This method is called by Inventor when it loads the addin.
@@ -61,81 +37,49 @@ namespace Inventor_SaveFileHandler
             // The FirstTime flag indicates if the addin is loaded for the first time.
 
             // Initialize AddIn members.
-            this.inventorApplication = addInSiteObject.Application;
+            m_inventorApplication = addInSiteObject.Application;
 
-            this.uIevents = this.inventorApplication.FileUIEvents;
-            this.uIevents.OnFileSaveAsDialog += this.FileUIEvents_OnFileSaveAsDialog;
+            m_UIevents = m_inventorApplication.FileUIEvents;
+            m_UIevents.OnFileSaveAsDialog += FileUIEvents_OnFileSaveAsDialog;
 
             // TODO: Add ApplicationAddInServer.Activate implementation.
             // e.g. event initialization, command creation etc.
         }
 
-        /// <inheritdoc/>
-        public void Deactivate()
-        {
-            // This method is called by Inventor when the AddIn is unloaded.
-            // The AddIn will be unloaded either manually by the user or
-            // when the Inventor session is terminated
-
-            // TODO: Add ApplicationAddInServer.Deactivate implementation
-            this.uIevents.OnFileSaveAsDialog -= this.FileUIEvents_OnFileSaveAsDialog;
-
-            // Release objects.
-            this.uIevents = null;
-            this.inventorApplication = null;
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-        }
-
-        /// <inheritdoc/>
-        public void ExecuteCommand(int commandID)
-        {
-            // Note:this method is now obsolete, you should use the
-            // ControlDefinition functionality for implementing commands.
-        }
-
         /// <summary>
         /// Handles save as event from inventor.
         /// </summary>
-        /// <param name="fileTypes">Fist of file types that are supported.</param>
-        /// <param name="saveCopyAs">Flag that indicates if save as copy is active.</param>
-        /// <param name="parentHWND">Handle of parent window.</param>
-        /// <param name="fileName">Result filename</param>
-        /// <param name="context">Active context</param>
-        /// <param name="handlingCode">Result handling code.</param>
-        private void FileUIEvents_OnFileSaveAsDialog(
-            ref string[] fileTypes,
-            bool saveCopyAs,
-            int parentHWND,
-            out string fileName,
-            NameValueMap context,
-            out HandlingCodeEnum handlingCode)
+        /// <param name="FileTypes">Fist of file types that are supportet.</param>
+        /// <param name="SaveCopyAs">Flag that indicates if save as copy is active.</param>
+        /// <param name="ParentHWND">Handle of parent window.</param>
+        /// <param name="FileName">Result filename</param>
+        /// <param name="Context">Active context</param>
+        /// <param name="HandlingCode">Result handling code.</param>
+        private void FileUIEvents_OnFileSaveAsDialog(ref string[] FileTypes, bool SaveCopyAs, int ParentHWND, out string FileName, NameValueMap Context, out HandlingCodeEnum HandlingCode)
         {
-            handlingCode = HandlingCodeEnum.kEventNotHandled;
-            fileName = string.Empty;
+            HandlingCode = HandlingCodeEnum.kEventNotHandled;
+            FileName = "";
 
-            string projectname = this.inventorApplication.DesignProjectManager.ActiveDesignProject.Name;
-            string workpath = this.inventorApplication.DesignProjectManager.ActiveDesignProject.WorkspacePath;
+            string projectname = m_inventorApplication.DesignProjectManager.ActiveDesignProject.Name;
+            string workpath = m_inventorApplication.DesignProjectManager.ActiveDesignProject.WorkspacePath;
 
             if (string.IsNullOrWhiteSpace(projectname) || projectname == "MTL" || projectname == "Default" || string.IsNullOrWhiteSpace(workpath))
             {
                 return;
             }
-
             try
             {
-                if (this.inventorApplication.ActiveDocumentType == DocumentTypeEnum.kPartDocumentObject && !saveCopyAs)
+                if (m_inventorApplication.ActiveDocumentType == DocumentTypeEnum.kPartDocumentObject && !SaveCopyAs)
                 {
-                    this.PartSaveAsHandler(workpath, projectname, ref handlingCode, ref fileName);
+                    this.PartSaveAsHandler(workpath, projectname, ref HandlingCode, ref FileName);
                 }
-                else if (this.inventorApplication.ActiveDocumentType == DocumentTypeEnum.kAssemblyDocumentObject && !saveCopyAs)
+                else if (m_inventorApplication.ActiveDocumentType == DocumentTypeEnum.kAssemblyDocumentObject && !SaveCopyAs)
                 {
-                    this.AssemblySaveAsHandler(workpath, projectname, ref handlingCode, ref fileName);
+                    this.AssemblySaveAsHandler(workpath, projectname, ref HandlingCode, ref FileName);
                 }
-                else if (this.inventorApplication.ActiveDocumentType == DocumentTypeEnum.kDrawingDocumentObject)
+                else if (m_inventorApplication.ActiveDocumentType == DocumentTypeEnum.kDrawingDocumentObject)
                 {
-                    this.DrawingSaveAsHandler(fileTypes, saveCopyAs, workpath, ref handlingCode, ref fileName);
+                    this.DrawingSaveAsHandler(FileTypes, SaveCopyAs, workpath, ref HandlingCode, ref FileName);
                 }
             }
             catch (Exception ex)
@@ -145,20 +89,20 @@ namespace Inventor_SaveFileHandler
         }
 
         /// <summary>
-        /// Handles save as event for IPT parts.
+        /// Handles save as event for ipt parts.
         /// </summary>
-        /// <param name="workpath">Path to working directory (from project settings).</param>
+        /// <param name="workpath">Path to working dir (from project settings).</param>
         /// <param name="projectname">Name of current project.</param>
-        /// <param name="handlingCode">Reference to handling code result.</param>
-        /// <param name="fileName">Reference to result filename variable.</param>
-        private void PartSaveAsHandler(string workpath, string projectname, ref HandlingCodeEnum handlingCode, ref string fileName)
+        /// <param name="HandlingCode">Reference to handling code result.</param>
+        /// <param name="FileName">Reference to result filename variable.</param>
+        private void PartSaveAsHandler(string workpath, string projectname, ref HandlingCodeEnum HandlingCode, ref string FileName)
         {
-            PropertySet designInfo = this.inventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
+            PropertySet designInfo = m_inventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
 
-            // creates a new part number dialog
+            // createa a new part number dialog
             PartnumberDialog pnd = new PartnumberDialog();
 
-            // assign dialog properties from file i-properties.
+            // assign dialog properties from file iproperties.
             pnd.ProjectName = projectname;
             pnd.WorkingDir = new WorkingDir(workpath);
             pnd.Vendor = designInfo["Vendor"].Value as string;
@@ -168,7 +112,7 @@ namespace Inventor_SaveFileHandler
             // show the dialog
             if (pnd.ShowDialog() == true)
             {
-                // assign i-properties
+                // assign iproperties
                 designInfo["Vendor"].Value = pnd.Vendor;
                 designInfo["Part Number"].Value = pnd.Partnumber;
                 designInfo["Description"].Value = pnd.Description;
@@ -196,26 +140,26 @@ namespace Inventor_SaveFileHandler
                 }
 
                 // assign filename and handling code.
-                fileName = IO.Path.Combine(folder, filename);
-                handlingCode = HandlingCodeEnum.kEventHandled;
+                FileName = IO.Path.Combine(folder, filename);
+                HandlingCode = HandlingCodeEnum.kEventHandled;
             }
         }
 
         /// <summary>
-        /// Handles save as event for IAM assembly's.
+        /// Handles save as event for iam assemblys.
         /// </summary>
-        /// <param name="workpath">Path to working directory (from project settings).</param>
+        /// <param name="workpath">Path to working dir (from project settings).</param>
         /// <param name="projectname">Name of current project.</param>
-        /// <param name="handlingCode">Reference to handling code result.</param>
-        /// <param name="fileName">Reference to result filename variable.</param>
-        private void AssemblySaveAsHandler(string workpath, string projectname, ref HandlingCodeEnum handlingCode, ref string fileName)
+        /// <param name="HandlingCode">Reference to handling code result.</param>
+        /// <param name="FileName">Reference to result filename variable.</param>
+        private void AssemblySaveAsHandler(string workpath, string projectname, ref HandlingCodeEnum HandlingCode, ref string FileName)
         {
-            PropertySet designInfo = this.inventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
+            PropertySet designInfo = m_inventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
 
-            // creates a new assembly number dialog
+            // createa a new assembly number dialog
             AsmNumberDialog pnd = new AsmNumberDialog();
 
-            // assign dialog properties from file i-properties.
+            // assign dialog properties from file iproperties.
             pnd.ProjectName = projectname;
             pnd.WorkingDir = new WorkingDir(workpath);
             pnd.Vendor = designInfo["Vendor"].Value as string;
@@ -225,11 +169,12 @@ namespace Inventor_SaveFileHandler
             // show the dialog
             if (pnd.ShowDialog() == true)
             {
-                // assign i-properties
+                // assign iproperties
                 designInfo["Vendor"].Value = pnd.Vendor;
                 designInfo["Part Number"].Value = pnd.Partnumber;
                 designInfo["Description"].Value = pnd.Description;
                 designInfo["Project"].Value = projectname;
+
 
                 // build result filename
                 string folder = string.Empty;
@@ -249,23 +194,23 @@ namespace Inventor_SaveFileHandler
                 }
 
                 // assign filename and handling code.
-                fileName = IO.Path.Combine(folder, filename);
-                handlingCode = HandlingCodeEnum.kEventHandled;
+                FileName = IO.Path.Combine(folder, filename);
+                HandlingCode = HandlingCodeEnum.kEventHandled;
             }
         }
 
         /// <summary>
-        /// Handles save as event for drawing documents.
+        /// Handles save as event for drwaing documents.
         /// </summary>
-        /// <param name="fileTypes">List of supported file types.</param>
-        /// <param name="saveCopyAs">Flag that indicates whether the save as copy option is active.</param>
-        /// <param name="workpath">Path to working directory (from project settings).</param>
-        /// <param name="handlingCode">Reference to handling code result.</param>
-        /// <param name="fileName">Reference to result filename variable.</param>
-        private void DrawingSaveAsHandler(string[] fileTypes, bool saveCopyAs, string workpath, ref HandlingCodeEnum handlingCode, ref string fileName)
+        /// <param name="FileTypes">List of supportet filetypes.</param>
+        /// <param name="SaveCopyAs">Flag that indicates whether the save as copy option is active.</param>
+        /// <param name="workpath">Path to working dir (from project settings).</param>
+        /// <param name="HandlingCode">Reference to handling code result.</param>
+        /// <param name="FileName">Reference to result filename variable.</param>
+        private void DrawingSaveAsHandler(string[] FileTypes, bool SaveCopyAs, string workpath, ref HandlingCodeEnum HandlingCode, ref string FileName)
         {
-            // get the current
-            DrawingDocument ddoc = this.inventorApplication.ActiveDocument as DrawingDocument;
+            // get the current 
+            DrawingDocument ddoc = m_inventorApplication.ActiveDocument as DrawingDocument;
             if (ddoc == null)
             {
                 return;
@@ -274,11 +219,11 @@ namespace Inventor_SaveFileHandler
             // create a new save file dialog
             System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
 
-            // applies all file types to filter of dialog
-            sfd.Filter = string.Join("|", fileTypes);
+            // applies all filetyes to filter of dialog
+            sfd.Filter = string.Join("|", FileTypes);
 
-            // if save as copy option
-            if (saveCopyAs)
+            // if save as copy option 
+            if (SaveCopyAs)
             {
                 // navigate dialog to "..\DoKumentation\Zeichnungen"
                 sfd.InitialDirectory = IO.Path.Combine(IO.Path.GetDirectoryName(workpath), "Dokumentation", "Zeichnungen");
@@ -286,16 +231,16 @@ namespace Inventor_SaveFileHandler
                 // filename is the same as the origin document
                 sfd.FileName = $"{IO.Path.GetFileNameWithoutExtension(ddoc.FullFileName)}";
 
-                // if PDF is available select PDF as default type
-                if (fileTypes.Any(o => o.ToUpper().Contains("PDF")))
+                // if pdf is available select pdf as default type
+                if (FileTypes.Any(o => o.ToUpper().Contains("PDF")))
                 {
-                    sfd.FilterIndex = fileTypes.ToList().IndexOf(fileTypes.First(o => o.ToUpper().Contains("PDF"))) + 1;
+                    sfd.FilterIndex = FileTypes.ToList().IndexOf(FileTypes.First(o => o.ToUpper().Contains("PDF"))) + 1;
                 }
             }
             else
             {
                 PropertySet designInfoOrig = null;
-
+                
                 // get the document from first view
                 Document doc = null;
                 if (ddoc.ReferencedDocuments.OfType<Document>().Any())
@@ -314,12 +259,12 @@ namespace Inventor_SaveFileHandler
                 }
 
                 // get property set
-                PropertySet designInfo = this.inventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
+                PropertySet designInfo = m_inventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
 
-                // parse part number.
+                // parse part nr.
                 string partNo = designInfoOrig["Part Number"].Value as string;
 
-                // if part number matches expression
+                // if partnr matches expression
                 // PV001_B001 --> PV001_ZB001
                 // PV001_T001 --> PV001_ZT001
                 if (partNo != null && Regex.IsMatch(partNo, @"^(.+_)([BT]\d+)$"))
@@ -332,14 +277,14 @@ namespace Inventor_SaveFileHandler
                     designInfo["Part Number"].Value = designInfoOrig["Part Number"].Value;
                 }
 
-                // copy description from document of first view
+                // copy descriotion from document of first view
                 designInfo["Description"].Value = designInfoOrig["Description"].Value;
 
                 // copy project of document from first view
                 designInfo["Project"].Value = designInfoOrig["Project"].Value;
 
-                // copy original filename,
-                // change _B001 --> _ZB001
+                // copy original filename, 
+                // change _B001 --> _ZB001 
                 // change _T001 --> _ZT001
                 string filenameOrig = IO.Path.GetFileNameWithoutExtension(doc.FullFileName);
 
@@ -358,9 +303,49 @@ namespace Inventor_SaveFileHandler
             // show save as dialog
             if (sfd.ShowDialog() == DialogResult.OK)
             {
-                fileName = sfd.FileName;
-                handlingCode = HandlingCodeEnum.kEventHandled;
+                FileName = sfd.FileName;
+                HandlingCode = HandlingCodeEnum.kEventHandled;
             }
         }
+
+        public void Deactivate()
+        {
+            // This method is called by Inventor when the AddIn is unloaded.
+            // The AddIn will be unloaded either manually by the user or
+            // when the Inventor session is terminated
+
+            // TODO: Add ApplicationAddInServer.Deactivate implementation
+            m_UIevents.OnFileSaveAsDialog -= FileUIEvents_OnFileSaveAsDialog;
+
+            // Release objects.
+            m_UIevents = null;
+            m_inventorApplication = null;
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        public void ExecuteCommand(int commandID)
+        {
+            // Note:this method is now obsolete, you should use the 
+            // ControlDefinition functionality for implementing commands.
+        }
+
+        public object Automation
+        {
+            // This property is provided to allow the AddIn to expose an API 
+            // of its own to other programs. Typically, this  would be done by
+            // implementing the AddIn's API interface in a class and returning 
+            // that class object through this property.
+
+            get
+            {
+                // TODO: Add ApplicationAddInServer.Automation getter implementation
+                return null;
+            }
+        }
+
+        #endregion
+
     }
 }
