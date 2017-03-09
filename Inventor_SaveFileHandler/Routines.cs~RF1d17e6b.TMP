@@ -76,9 +76,9 @@ namespace InvAddIn
         /// </summary>
         /// <param name="partDocument">Reference to part object.</param>
         /// <returns>Outer dimensions as string.</returns>
-        internal static string DetermineOuterDimensions(Iv.PartDocument partDocument, Iv.Application app)
+        internal static string DetermineOuterDimensions(Iv.PartDocument partDocument)
         {
-            double factor = 10;
+            double factor = 1;
             switch (partDocument.UnitsOfMeasure.LengthUnits)
             {
                 case Iv.UnitsTypeEnum.kDatabaseLengthUnits:
@@ -118,24 +118,15 @@ namespace InvAddIn
             {
                 Iv.SheetMetalComponentDefinition smcd = partDocument.ComponentDefinition as Iv.SheetMetalComponentDefinition;
 
-                if (!smcd.HasFlatPattern)
-                {
-                    smcd.Unfold();
-                    app.CommandManager.ControlDefinitions["PartSwitchRepresentationCmd"].Execute();
-                }
-
                 Iv.FlatPattern fp = smcd.FlatPattern;
-                if (fp != null)
-                {
-                    length = (fp.RangeBox.MaxPoint.X - fp.RangeBox.MinPoint.X) * factor;
-                    width = (fp.RangeBox.MaxPoint.Y - fp.RangeBox.MinPoint.Y) * factor;
-                    height = (fp.RangeBox.MaxPoint.Z - fp.RangeBox.MinPoint.Z) * factor;
-                }
+                length = (fp.RangeBox.MaxPoint.X - cd.RangeBox.MinPoint.X) * factor;
+                width = (fp.RangeBox.MaxPoint.Y - cd.RangeBox.MinPoint.Y) * factor;
+                height = (fp.RangeBox.MaxPoint.Z - cd.RangeBox.MinPoint.Z) * factor;
             }
 
             List<double> dim = new List<double>() { length, width, height };
             dim.Sort();
-            return $"{dim[2] :0}x{dim[1] :0}x{dim[0] :0}";
+            return $"{dim[0] :0}x{dim[1] :0}x{dim[2] :0}";
         }
     }
 }

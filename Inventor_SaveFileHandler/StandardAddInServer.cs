@@ -65,6 +65,7 @@ namespace Inventor_SaveFileHandler
 
             this.uIevents = this.inventorApplication.FileUIEvents;
             this.uIevents.OnFileSaveAsDialog += this.FileUIEvents_OnFileSaveAsDialog;
+            this.inventorApplication.ApplicationEvents.OnSaveDocument += this.RefreshPhysical;
 
             // TODO: Add ApplicationAddInServer.Activate implementation.
             // e.g. event initialization, command creation etc.
@@ -361,6 +362,27 @@ namespace Inventor_SaveFileHandler
                 fileName = sfd.FileName;
                 handlingCode = HandlingCodeEnum.kEventHandled;
             }
+        }
+
+        private void RefreshPhysical(_Document documentObject, EventTimingEnum beforeOrAfter, NameValueMap context, out HandlingCodeEnum handlingCode)
+        {
+            if (documentObject is PartDocument && beforeOrAfter == EventTimingEnum.kBefore)
+            {
+                PartDocument part = documentObject as PartDocument;
+                PropertySet invCustomPropertySet = part.PropertySets["Inventor User Defined Properties"];
+                Property halbzeugProperty = invCustomPropertySet.OfType<Property>().Any(o => o.Name == "Halbzeug") ?
+                    invCustomPropertySet["Halbzeug"] :
+                    invCustomPropertySet.Add(string.Empty, "Halbzeug");
+
+                part.Update();
+                double m = part.ComponentDefinition.MassProperties.Mass;
+
+                string halbzeug = Routines.DetermineOuterDimensions(part, this.inventorApplication);
+
+                halbzeugProperty.Value = halbzeug;
+            }
+
+            handlingCode = HandlingCodeEnum.kEventNotHandled;
         }
     }
 }
