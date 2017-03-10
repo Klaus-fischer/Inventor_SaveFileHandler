@@ -10,6 +10,7 @@ namespace InvAddIn
     using System.Text.RegularExpressions;
     using System.Windows;
     using System.Windows.Controls;
+    using Iv=Inventor;
 
     /// <summary>
     /// Code behind file for PartnumberDialog.xaml.
@@ -64,6 +65,21 @@ namespace InvAddIn
         /// Gets user choice
         /// </summary>
         public EPartType PartType { get; private set; } = EPartType.CustomerPart;
+
+        /// <summary>
+        /// Gets the content of the outer dimension text box on close.
+        /// </summary>
+        public string OuterDimensions { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether part is a rotating part.
+        /// </summary>
+        public bool IsRotatePart { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether outer dimensions should be re-elevated on save.
+        /// </summary>
+        public bool ReElevateDimensionOnSave { get; private set; }
 
         /// <summary>
         /// Gets the key of the project (everything before the underscore)
@@ -147,6 +163,7 @@ namespace InvAddIn
             {
                 this.PartType = EPartType.MakePart;
                 this.tb_partnumber.Text = Routines.GetNextPartNumber($"{this.ProjectKey}_T", this.Suffix, this.WorkingDir.CAD);
+                this.RecalculateDimensions(sender, e);
             }
             else if (sender == this.rb_customerpart)
             {
@@ -203,6 +220,10 @@ namespace InvAddIn
             this.Partnumber = this.tb_partnumber.Text.Trim();
             this.Description = this.tb_description.Text.Trim();
 
+            this.OuterDimensions = this.tb_dimensions.Text.Trim();
+            this.IsRotatePart = true.Equals(this.cb_rotatePart.IsChecked);
+            this.ReElevateDimensionOnSave = true.Equals(this.cb_recalcOnSave.IsChecked);
+
             this.DialogResult = true;
             this.Close();
         }
@@ -215,6 +236,16 @@ namespace InvAddIn
         private void Vendor_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
         {
             this.Textbox_TextChanged(sender, null);
+        }
+
+        private void RecalculateDimensions(object sender, RoutedEventArgs e)
+        {
+            Iv.PartDocument doc = StandardAddInServer.This.InventorApplication.ActiveDocument as Iv.PartDocument;
+
+            if (doc != null)
+            {
+                this.tb_dimensions.Text = Routines.DetermineOuterDimensions(doc, true.Equals(this.cb_rotatePart.IsChecked));
+            }
         }
     }
 }

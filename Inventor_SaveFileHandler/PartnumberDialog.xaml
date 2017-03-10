@@ -55,6 +55,13 @@
         <HeaderedContentControl Header="Vorschau:">
             <TextBox x:Name="tb_preview" IsReadOnly="False"/>
         </HeaderedContentControl>
+        <Expander Header="Halbzeug" Visibility="{Binding IsChecked, Converter={StaticResource BooleanToVisibilityConverter}, ElementName=rb_makepart}" >
+            <StackPanel Margin="24,5,4,5">
+                <TextBox x:Name="tb_dimensions"/>
+                <CheckBox x:Name="cb_rotatePart" Content="Drehteil" Margin="0,5" Checked="RecalculateDimensions" Unchecked="RecalculateDimensions"/>
+                <CheckBox x:Name="cb_recalcOnSave" Content="Neu berechnen beim Speichern"  Margin="0,5" IsChecked="True"/>
+            </StackPanel>
+        </Expander>
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>

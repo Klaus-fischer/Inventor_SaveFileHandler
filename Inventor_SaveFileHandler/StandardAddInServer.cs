@@ -2,14 +2,13 @@
 // Copyright (c) MTL - Montagetechnik Larem GmbH. All rights reserved.
 // </copyright>
 
-namespace Inventor_SaveFileHandler
+namespace InvAddIn
 {
     using System;
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text.RegularExpressions;
     using System.Windows.Forms;
-    using InvAddIn;
     using Inventor;
     using IO = System.IO;
 
@@ -22,11 +21,6 @@ namespace Inventor_SaveFileHandler
     public class StandardAddInServer : Inventor.ApplicationAddInServer
     {
         /// <summary>
-        /// Inventor application object.
-        /// </summary>
-        private Inventor.Application inventorApplication;
-
-        /// <summary>
         /// Event handler for UI events.
         /// </summary>
         private FileUIEvents uIevents;
@@ -36,7 +30,18 @@ namespace Inventor_SaveFileHandler
         /// </summary>
         public StandardAddInServer()
         {
+            StandardAddInServer.This = this;
         }
+
+        /// <summary>
+        /// Gets a static reference to the loaded instance.
+        /// </summary>
+        public static StandardAddInServer This { get; private set; }
+
+        /// <summary>
+        /// Gets the Inventor application object.
+        /// </summary>
+        public Inventor.Application InventorApplication { get; private set; }
 
         /// <summary>
         /// Gets the property is provided to allow the AddIn to expose an API
@@ -61,11 +66,11 @@ namespace Inventor_SaveFileHandler
             // The FirstTime flag indicates if the addin is loaded for the first time.
 
             // Initialize AddIn members.
-            this.inventorApplication = addInSiteObject.Application;
+            this.InventorApplication = addInSiteObject.Application;
 
-            this.uIevents = this.inventorApplication.FileUIEvents;
+            this.uIevents = this.InventorApplication.FileUIEvents;
             this.uIevents.OnFileSaveAsDialog += this.FileUIEvents_OnFileSaveAsDialog;
-            this.inventorApplication.ApplicationEvents.OnSaveDocument += this.RefreshPhysical;
+            this.InventorApplication.ApplicationEvents.OnSaveDocument += this.RefreshPhysical;
 
             // TODO: Add ApplicationAddInServer.Activate implementation.
             // e.g. event initialization, command creation etc.
@@ -83,7 +88,7 @@ namespace Inventor_SaveFileHandler
 
             // Release objects.
             this.uIevents = null;
-            this.inventorApplication = null;
+            this.InventorApplication = null;
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
@@ -116,8 +121,8 @@ namespace Inventor_SaveFileHandler
             handlingCode = HandlingCodeEnum.kEventNotHandled;
             fileName = string.Empty;
 
-            string projectname = this.inventorApplication.DesignProjectManager.ActiveDesignProject.Name;
-            string workpath = this.inventorApplication.DesignProjectManager.ActiveDesignProject.WorkspacePath;
+            string projectname = this.InventorApplication.DesignProjectManager.ActiveDesignProject.Name;
+            string workpath = this.InventorApplication.DesignProjectManager.ActiveDesignProject.WorkspacePath;
 
             if (string.IsNullOrWhiteSpace(projectname) || projectname == "MTL" || projectname == "Default" || string.IsNullOrWhiteSpace(workpath))
             {
@@ -126,15 +131,15 @@ namespace Inventor_SaveFileHandler
 
             try
             {
-                if (this.inventorApplication.ActiveDocumentType == DocumentTypeEnum.kPartDocumentObject && !saveCopyAs)
+                if (this.InventorApplication.ActiveDocumentType == DocumentTypeEnum.kPartDocumentObject && !saveCopyAs)
                 {
                     this.PartSaveAsHandler(workpath, projectname, ref handlingCode, ref fileName);
                 }
-                else if (this.inventorApplication.ActiveDocumentType == DocumentTypeEnum.kAssemblyDocumentObject && !saveCopyAs)
+                else if (this.InventorApplication.ActiveDocumentType == DocumentTypeEnum.kAssemblyDocumentObject && !saveCopyAs)
                 {
                     this.AssemblySaveAsHandler(workpath, projectname, ref handlingCode, ref fileName);
                 }
-                else if (this.inventorApplication.ActiveDocumentType == DocumentTypeEnum.kDrawingDocumentObject)
+                else if (this.InventorApplication.ActiveDocumentType == DocumentTypeEnum.kDrawingDocumentObject)
                 {
                     this.DrawingSaveAsHandler(fileTypes, saveCopyAs, workpath, ref handlingCode, ref fileName);
                 }
@@ -154,7 +159,7 @@ namespace Inventor_SaveFileHandler
         /// <param name="fileName">Reference to result filename variable.</param>
         private void PartSaveAsHandler(string workpath, string projectname, ref HandlingCodeEnum handlingCode, ref string fileName)
         {
-            PropertySet designInfo = this.inventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
+            PropertySet designInfo = this.InventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
 
             // creates a new part number dialog
             PartnumberDialog pnd = new PartnumberDialog();
@@ -183,6 +188,37 @@ namespace Inventor_SaveFileHandler
                     case EPartType.MakePart:
                         folder = pnd.WorkingDir.CAD;
                         filename = $"{pnd.Partnumber}_{pnd.Description}.ipt";
+
+                        PropertySet invCustomPropertySet = this.InventorApplication.ActiveDocument.PropertySets["Inventor User Defined Properties"];
+
+                        // save halbzeug properties
+                        if (invCustomPropertySet.OfType<Property>().Any(o => o.Name == "Halbzeug"))
+                        {
+                            invCustomPropertySet["Halbzeug"].Value = pnd.OuterDimensions;
+                        }
+                        else
+                        {
+                            invCustomPropertySet.Add(pnd.OuterDimensions, "Halbzeug");
+                        }
+
+                        if (invCustomPropertySet.OfType<Property>().Any(o => o.Name == "HalbzeugNeuBerechnen"))
+                        {
+                            invCustomPropertySet["HalbzeugNeuBerechnen"].Value = pnd.ReElevateDimensionOnSave;
+                        }
+                        else
+                        {
+                            invCustomPropertySet.Add(pnd.ReElevateDimensionOnSave, "HalbzeugNeuBerechnen");
+                        }
+
+                        if (invCustomPropertySet.OfType<Property>().Any(o => o.Name == "Drehteil"))
+                        {
+                            invCustomPropertySet["Drehteil"].Value = pnd.IsRotatePart;
+                        }
+                        else
+                        {
+                            invCustomPropertySet.Add(pnd.IsRotatePart, "Drehteil");
+                        }
+
                         break;
                     case EPartType.CustomerPart:
                         folder = pnd.WorkingDir.Kundenteile;
@@ -211,7 +247,7 @@ namespace Inventor_SaveFileHandler
         /// <param name="fileName">Reference to result filename variable.</param>
         private void AssemblySaveAsHandler(string workpath, string projectname, ref HandlingCodeEnum handlingCode, ref string fileName)
         {
-            PropertySet designInfo = this.inventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
+            PropertySet designInfo = this.InventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
 
             // creates a new assembly number dialog
             AsmNumberDialog pnd = new AsmNumberDialog();
@@ -266,7 +302,7 @@ namespace Inventor_SaveFileHandler
         private void DrawingSaveAsHandler(string[] fileTypes, bool saveCopyAs, string workpath, ref HandlingCodeEnum handlingCode, ref string fileName)
         {
             // get the current
-            DrawingDocument ddoc = this.inventorApplication.ActiveDocument as DrawingDocument;
+            DrawingDocument ddoc = this.InventorApplication.ActiveDocument as DrawingDocument;
             if (ddoc == null)
             {
                 return;
@@ -315,7 +351,7 @@ namespace Inventor_SaveFileHandler
                 }
 
                 // get property set
-                PropertySet designInfo = this.inventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
+                PropertySet designInfo = this.InventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
 
                 // parse part number.
                 string partNo = designInfoOrig["Part Number"].Value as string;
@@ -374,12 +410,22 @@ namespace Inventor_SaveFileHandler
                     invCustomPropertySet["Halbzeug"] :
                     invCustomPropertySet.Add(string.Empty, "Halbzeug");
 
+                Property overrideDimensions = invCustomPropertySet.OfType<Property>().Any(o => o.Name == "HalbzeugNeuBerechnen") ?
+                    invCustomPropertySet["HalbzeugNeuBerechnen"] :
+                    invCustomPropertySet.Add(true, "HalbzeugNeuBerechnen");
+
+                Property rotatePart = invCustomPropertySet.OfType<Property>().Any(o => o.Name == "Drehteil") ?
+                    invCustomPropertySet["Drehteil"] :
+                    invCustomPropertySet.Add(false, "Drehteil");
+
                 part.Update();
                 double m = part.ComponentDefinition.MassProperties.Mass;
 
-                string halbzeug = Routines.DetermineOuterDimensions(part, this.inventorApplication);
-
-                halbzeugProperty.Value = halbzeug;
+                if (true.Equals(overrideDimensions.Value))
+                {
+                    string halbzeug = Routines.DetermineOuterDimensions(part, true.Equals(rotatePart.Value));
+                    halbzeugProperty.Value = halbzeug;
+                }
             }
 
             handlingCode = HandlingCodeEnum.kEventNotHandled;
