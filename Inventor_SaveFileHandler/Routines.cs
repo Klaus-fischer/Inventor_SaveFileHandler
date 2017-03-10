@@ -92,6 +92,12 @@ namespace InvAddIn
             dim = new List<double>() { Math.Floor(length), Math.Floor(width), Math.Floor(height) };
             dim.Sort();
 
+            // no part defines jet.
+            if (dim[2] == 0)
+            {
+                return string.Empty;
+            }
+
             // for rotating parts
             if (isRound)
             {
