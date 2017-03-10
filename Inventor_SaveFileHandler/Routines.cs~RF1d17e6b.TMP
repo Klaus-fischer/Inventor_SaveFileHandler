@@ -75,65 +75,58 @@ namespace InvAddIn
         /// Calculates the outer dimensions of a part.
         /// </summary>
         /// <param name="partDocument">Reference to part object.</param>
-        /// <param name="isRound">Flag that indicates a rotating part.</param>
         /// <returns>Outer dimensions as string.</returns>
-        internal static string DetermineOuterDimensions(Iv.PartDocument partDocument, bool isRound)
+        internal static string DetermineOuterDimensions(Iv.PartDocument partDocument)
         {
-            // partDocument.UnitsOfMeasure.LengthUnits are not supported by now.
-            double factor = 10;
+            double factor = 1;
+            switch (partDocument.UnitsOfMeasure.LengthUnits)
+            {
+                case Iv.UnitsTypeEnum.kDatabaseLengthUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kCentimeterLengthUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kMillimeterLengthUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kMeterLengthUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kMicronLengthUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kInchLengthUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kFootLengthUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kYardLengthUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kMileLengthUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kDefaultDisplayTemperatureUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kNauticalMileLengthUnits:
+                    break;
+                case Iv.UnitsTypeEnum.kMilLengthUnits:
+                    break;
+                default:
+                    break;
+            }
 
-            List<double> dim = new List<double>();
-
-            // get max ranges in each dimensions.
             Iv.PartComponentDefinition cd = partDocument.ComponentDefinition;
             double length = (cd.RangeBox.MaxPoint.X - cd.RangeBox.MinPoint.X) * factor;
             double width = (cd.RangeBox.MaxPoint.Y - cd.RangeBox.MinPoint.Y) * factor;
             double height = (cd.RangeBox.MaxPoint.Z - cd.RangeBox.MinPoint.Z) * factor;
-            dim = new List<double>() { Math.Floor(length), Math.Floor(width), Math.Floor(height) };
-            dim.Sort();
 
-            // for rotating parts
-            if (isRound)
-            {
-                // if length / width is equal or height / width
-                if (Math.Abs(dim[0] - dim[1]) < Math.Abs(dim[2] - dim[1]))
-                {
-                    return $"Ø{dim[1]}x{dim[2]}";
-                }
-                else
-                {
-                    return $"Ø{dim[1]}x{dim[0]}";
-                }
-            }
-            else if (partDocument.ComponentDefinition is Iv.SheetMetalComponentDefinition)
+            if (partDocument.ComponentDefinition is Iv.SheetMetalComponentDefinition)
             {
                 Iv.SheetMetalComponentDefinition smcd = partDocument.ComponentDefinition as Iv.SheetMetalComponentDefinition;
 
-                if (!smcd.HasFlatPattern)
-                {
-                    smcd.Unfold();
-                    StandardAddInServer.This.InventorApplication.CommandManager.ControlDefinitions["PartSwitchRepresentationCmd"].Execute();
-                }
-
                 Iv.FlatPattern fp = smcd.FlatPattern;
-                if (fp == null)
-                {
-                    return string.Empty;
-                }
-
-                length = (fp.RangeBox.MaxPoint.X - fp.RangeBox.MinPoint.X) * factor;
-                width = (fp.RangeBox.MaxPoint.Y - fp.RangeBox.MinPoint.Y) * factor;
-                height = (fp.RangeBox.MaxPoint.Z - fp.RangeBox.MinPoint.Z) * factor;
-
-                dim = new List<double>() { Math.Floor(length), Math.Floor(width), Math.Floor(height) };
-
-                dim.Sort();
-
-                dim.RemoveAt(0);
-                dim.Insert(0, (double)smcd.Thickness.Value * factor);
+                length = (fp.RangeBox.MaxPoint.X - cd.RangeBox.MinPoint.X) * factor;
+                width = (fp.RangeBox.MaxPoint.Y - cd.RangeBox.MinPoint.Y) * factor;
+                height = (fp.RangeBox.MaxPoint.Z - cd.RangeBox.MinPoint.Z) * factor;
             }
 
-            return $"{dim[2]}x{dim[1]}x{dim[0]}";
+            List<double> dim = new List<double>() { length, width, height };
+            dim.Sort();
+            return $"{dim[0] :0}x{dim[1] :0}x{dim[2] :0}";
         }
     }
 }
