@@ -1,0 +1,5 @@
+1.1
+	BOM Structure will be set in save as handler.
+
+1.0
+	File save handler for drawings, assemblies and parts implemented.

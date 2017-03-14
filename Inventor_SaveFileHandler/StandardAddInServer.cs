@@ -11,6 +11,7 @@ namespace InvAddIn
     using System.Windows.Forms;
     using Inventor;
     using IO = System.IO;
+    using System.Collections.Generic;
 
     /// <summary>
     /// This is the primary AddIn Server class that implements the ApplicationAddInServer interface
@@ -121,6 +122,13 @@ namespace InvAddIn
             handlingCode = HandlingCodeEnum.kEventNotHandled;
             fileName = string.Empty;
 
+            Dictionary<string, object> contextClear = new Dictionary<string, object>();
+
+            for (int i = 0; i < context.Count; i++)
+            {
+                contextClear.Add(context.Name[i + 1], context.Value[context.Name[i + 1]]);
+            }
+
             string projectname = this.InventorApplication.DesignProjectManager.ActiveDesignProject.Name;
             string workpath = this.InventorApplication.DesignProjectManager.ActiveDesignProject.WorkspacePath;
 
@@ -129,37 +137,43 @@ namespace InvAddIn
                 return;
             }
 
-            try
+            if (contextClear.ContainsKey("TopLevelDocument"))
             {
-                if (this.InventorApplication.ActiveDocumentType == DocumentTypeEnum.kPartDocumentObject && !saveCopyAs)
+                Document doc = contextClear["TopLevelDocument"] as Document;
+
+                try
                 {
-                    this.PartSaveAsHandler(workpath, projectname, ref handlingCode, ref fileName);
+                    if (doc.DocumentType == DocumentTypeEnum.kPartDocumentObject && !saveCopyAs)
+                    {
+                        this.PartSaveAsHandler(ref doc, workpath, projectname, ref handlingCode, ref fileName);
+                    }
+                    else if (doc.DocumentType == DocumentTypeEnum.kAssemblyDocumentObject && !saveCopyAs)
+                    {
+                        this.AssemblySaveAsHandler(ref doc, workpath, projectname, ref handlingCode, ref fileName);
+                    }
+                    else if (doc.DocumentType == DocumentTypeEnum.kDrawingDocumentObject)
+                    {
+                        this.DrawingSaveAsHandler(ref doc, fileTypes, saveCopyAs, workpath, ref handlingCode, ref fileName);
+                    }
                 }
-                else if (this.InventorApplication.ActiveDocumentType == DocumentTypeEnum.kAssemblyDocumentObject && !saveCopyAs)
+                catch (Exception ex)
                 {
-                    this.AssemblySaveAsHandler(workpath, projectname, ref handlingCode, ref fileName);
+                    Routines.SerializeException(ex);
                 }
-                else if (this.InventorApplication.ActiveDocumentType == DocumentTypeEnum.kDrawingDocumentObject)
-                {
-                    this.DrawingSaveAsHandler(fileTypes, saveCopyAs, workpath, ref handlingCode, ref fileName);
-                }
-            }
-            catch (Exception ex)
-            {
-                Routines.SerializeException(ex);
             }
         }
 
         /// <summary>
         /// Handles save as event for IPT parts.
         /// </summary>
+        /// <param name="doc">document to be saved.</param>
         /// <param name="workpath">Path to working directory (from project settings).</param>
         /// <param name="projectname">Name of current project.</param>
         /// <param name="handlingCode">Reference to handling code result.</param>
         /// <param name="fileName">Reference to result filename variable.</param>
-        private void PartSaveAsHandler(string workpath, string projectname, ref HandlingCodeEnum handlingCode, ref string fileName)
+        private void PartSaveAsHandler(ref Document doc,  string workpath, string projectname, ref HandlingCodeEnum handlingCode, ref string fileName)
         {
-            PropertySet designInfo = this.InventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
+            PropertySet designInfo = doc.PropertySets["Design Tracking Properties"];
 
             // creates a new part number dialog
             PartnumberDialog pnd = new PartnumberDialog();
@@ -219,14 +233,17 @@ namespace InvAddIn
                             invCustomPropertySet.Add(pnd.IsRotatePart, "Drehteil");
                         }
 
+                        (doc as PartDocument).ComponentDefinition.BOMStructure = BOMStructureEnum.kNormalBOMStructure;
                         break;
                     case EPartType.CustomerPart:
                         folder = pnd.WorkingDir.Kundenteile;
                         filename = $"{pnd.Partnumber}_{pnd.Description}.ipt";
+                        (doc as PartDocument).ComponentDefinition.BOMStructure = BOMStructureEnum.kReferenceBOMStructure;
                         break;
                     case EPartType.BuyPart:
                         folder = IO.Path.Combine(pnd.WorkingDir.Kaufteile, pnd.Vendor);
                         filename = $"{pnd.Vendor}_{pnd.Partnumber}_{pnd.Description}.ipt";
+                        (doc as PartDocument).ComponentDefinition.BOMStructure = BOMStructureEnum.kPurchasedBOMStructure;
                         break;
                     default:
                         return;
@@ -241,13 +258,14 @@ namespace InvAddIn
         /// <summary>
         /// Handles save as event for IAM assembly's.
         /// </summary>
+        /// <param name="doc">document to be saved.</param>
         /// <param name="workpath">Path to working directory (from project settings).</param>
         /// <param name="projectname">Name of current project.</param>
         /// <param name="handlingCode">Reference to handling code result.</param>
         /// <param name="fileName">Reference to result filename variable.</param>
-        private void AssemblySaveAsHandler(string workpath, string projectname, ref HandlingCodeEnum handlingCode, ref string fileName)
+        private void AssemblySaveAsHandler(ref Document doc, string workpath, string projectname, ref HandlingCodeEnum handlingCode, ref string fileName)
         {
-            PropertySet designInfo = this.InventorApplication.ActiveDocument.PropertySets["Design Tracking Properties"];
+            PropertySet designInfo = doc.PropertySets["Design Tracking Properties"];
 
             // creates a new assembly number dialog
             AsmNumberDialog pnd = new AsmNumberDialog();
@@ -276,10 +294,12 @@ namespace InvAddIn
                     case EPartType.MakePart:
                         folder = pnd.WorkingDir.CAD;
                         filename = $"{pnd.Partnumber}_{pnd.Description}.iam";
+                        (doc as AssemblyDocument).ComponentDefinition.BOMStructure = BOMStructureEnum.kNormalBOMStructure;
                         break;
                     case EPartType.BuyPart:
                         folder = IO.Path.Combine(pnd.WorkingDir.Kaufteile, pnd.Vendor);
                         filename = $"{pnd.Vendor}_{pnd.Partnumber}_{pnd.Description}.iam";
+                        (doc as AssemblyDocument).ComponentDefinition.BOMStructure = BOMStructureEnum.kPurchasedBOMStructure;
                         break;
                     default:
                         return;
@@ -294,22 +314,23 @@ namespace InvAddIn
         /// <summary>
         /// Handles save as event for drawing documents.
         /// </summary>
+        /// <param name="document">document to be saved.</param>
         /// <param name="fileTypes">List of supported file types.</param>
         /// <param name="saveCopyAs">Flag that indicates whether the save as copy option is active.</param>
         /// <param name="workpath">Path to working directory (from project settings).</param>
         /// <param name="handlingCode">Reference to handling code result.</param>
         /// <param name="fileName">Reference to result filename variable.</param>
-        private void DrawingSaveAsHandler(string[] fileTypes, bool saveCopyAs, string workpath, ref HandlingCodeEnum handlingCode, ref string fileName)
+        private void DrawingSaveAsHandler(ref Document document, string[] fileTypes, bool saveCopyAs, string workpath, ref HandlingCodeEnum handlingCode, ref string fileName)
         {
             // get the current
-            DrawingDocument ddoc = this.InventorApplication.ActiveDocument as DrawingDocument;
+            DrawingDocument ddoc = document as DrawingDocument;
             if (ddoc == null)
             {
                 return;
             }
 
             // create a new save file dialog
-            System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
+            SaveFileDialog sfd = new SaveFileDialog();
 
             // applies all file types to filter of dialog
             sfd.Filter = string.Join("|", fileTypes);

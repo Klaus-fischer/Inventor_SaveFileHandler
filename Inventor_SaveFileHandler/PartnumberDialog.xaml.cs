@@ -173,7 +173,7 @@ namespace InvAddIn
             else
             {
                 this.PartType = EPartType.BuyPart;
-                this.tb_partnumber.Text = string.Empty;
+                this.tb_partnumber.Text = this.Partnumber;
             }
         }
 
