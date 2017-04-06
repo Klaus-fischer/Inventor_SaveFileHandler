@@ -86,10 +86,10 @@ namespace InvAddIn
 
             // get max ranges in each dimensions.
             Iv.PartComponentDefinition cd = partDocument.ComponentDefinition;
-            double length = (cd.RangeBox.MaxPoint.X - cd.RangeBox.MinPoint.X) * factor;
-            double width = (cd.RangeBox.MaxPoint.Y - cd.RangeBox.MinPoint.Y) * factor;
-            double height = (cd.RangeBox.MaxPoint.Z - cd.RangeBox.MinPoint.Z) * factor;
-            dim = new List<double>() { Math.Floor(length), Math.Floor(width), Math.Floor(height) };
+            double length = Math.Round((cd.RangeBox.MaxPoint.X - cd.RangeBox.MinPoint.X) * factor, 2);
+            double width = Math.Round((cd.RangeBox.MaxPoint.Y - cd.RangeBox.MinPoint.Y) * factor, 2);
+            double height = Math.Round((cd.RangeBox.MaxPoint.Z - cd.RangeBox.MinPoint.Z) * factor, 2);
+            dim = new List<double>() { Math.Ceiling(length), Math.Ceiling(width), Math.Ceiling(height) };
             dim.Sort();
 
             // no part defines jet.
@@ -131,7 +131,12 @@ namespace InvAddIn
                 width = (fp.RangeBox.MaxPoint.Y - fp.RangeBox.MinPoint.Y) * factor;
                 height = (fp.RangeBox.MaxPoint.Z - fp.RangeBox.MinPoint.Z) * factor;
 
-                dim = new List<double>() { Math.Floor(length), Math.Floor(width), Math.Floor(height) };
+                dim = new List<double>()
+                {
+                    Math.Ceiling(Math.Round(length, 2)),
+                    Math.Ceiling(Math.Round(width, 2)),
+                    Math.Ceiling(Math.Round(height, 2))
+                };
 
                 dim.Sort();
 
